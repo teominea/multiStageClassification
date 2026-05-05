@@ -8,8 +8,6 @@ import seaborn as sns
 from tqdm import tqdm
 from collections import defaultdict
 
-# 
-
 SKELETON_DIR = "./dataset/nturgb+d_skeletons"
 OUTPUT_DIR   = "./eda_output"
 SAMPLE_SIZE  = 10000

@@ -1,30 +1,4 @@
-"""
-NTU RGB+D 60 — Exploratory Data Analysis (EDA)
-================================================
-Parses a sample of .skeleton files and produces a full EDA report:
-
-  1. Dataset overview (file counts, class distribution)
-  2. Sequence length analysis (frames per sample)
-  3. Subject & camera view distribution
-  4. Skeleton quality analysis (missing/zero bodies)
-  5. Joint position statistics (mean, std per joint)
-  6. Motion intensity analysis (mean displacement per class)
-  7. Cross-subject split preview
-
-All plots are saved to ./eda_output/
-
-Usage:
-    pip install numpy matplotlib seaborn pandas tqdm
-    python eda_ntu60.py
-
-Configuration:
-    SKELETON_DIR  — folder containing all .skeleton files
-    SAMPLE_SIZE   — how many files to parse for deep analysis
-                    (parsing all 56k is slow; 3000 gives solid stats)
-"""
-
 import os
-import re
 import random
 import numpy as np
 import pandas as pd
@@ -392,38 +366,33 @@ JOINT_NAMES = [
     "right hand tip", "right thumb",
 ]
 
-# ─── HELPERS ─────────────────────────────────────────────────────────────────
+# helper functions for parsing filenames and skeleton files, and saving plots
 
 def parse_filename(fname):
     """Extract metadata from NTU filename. Returns dict or None."""
-    m = re.match(
-        r'S(\d{3})C(\d{3})P(\d{3})R(\d{3})A(\d{3})',
-        fname, re.IGNORECASE
-    )
-    if not m:
+    bare = fname.split('.')[0].upper()
+    if len(bare) < 20 or bare[0] != 'S' or bare[4] != 'C' or bare[8] != 'P' or bare[12] != 'R' or bare[16] != 'A':
         return None
-    return {
-        "setup":   int(m.group(1)),
-        "camera":  int(m.group(2)),
-        "subject": int(m.group(3)),
-        "rep":     int(m.group(4)),
-        "action":  int(m.group(5)),
-    }
+    try:
+        return {
+            "setup":   int(bare[1:4]),
+            "camera":  int(bare[5:8]),
+            "subject": int(bare[9:12]),
+            "rep":     int(bare[13:16]),
+            "action":  int(bare[17:20]),
+        }
+    except ValueError:
+        return None
 
 
 def parse_skeleton_file(filepath):
-    """
-    Parse a single .skeleton file.
-    Returns dict with:
-        n_frames, n_bodies, joints (np array F x 25 x 3), has_missing
-    Returns None on failure.
-    """
     try:
         with open(filepath, "r") as f:
             lines = f.read().splitlines()
 
         idx = 0
-        n_frames = int(lines[idx]); idx += 1
+        n_frames = int(lines[idx])
+        idx += 1
         all_joints = []
         has_missing = False
 
@@ -471,10 +440,10 @@ def save(fig, name):
     plt.close(fig)
     print(f"  Saved → {path}")
 
-# ─── ANALYSIS SECTIONS ───────────────────────────────────────────────────────
+# EDA sections
 
 def section_1_overview(meta_df):
-    print("\n[1/7] Dataset overview")
+    print("\nDataset overview")
     print(f"  Clean files        : {len(meta_df)}  (after excluding 302 corrupted)")
     print(f"  Unique actions     : {meta_df['action'].nunique()}")
     print(f"  Unique subjects    : {meta_df['subject'].nunique()}")
@@ -500,7 +469,7 @@ def section_1_overview(meta_df):
 
 
 def section_2_metadata(meta_df):
-    print("\n[2/7] Subject & camera distribution")
+    print("\nSubject & camera distribution")
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -534,7 +503,7 @@ def section_2_metadata(meta_df):
 
 
 def section_3_sequence_length(parsed):
-    print("\n[3/7] Sequence length analysis")
+    print("\nSequence length analysis")
     lengths = [p["n_frames"] for p in parsed.values()]
     lengths = np.array(lengths)
 
@@ -566,7 +535,7 @@ def section_3_sequence_length(parsed):
 
 
 def section_4_quality(parsed, sampled_files):
-    print("\n[4/7] Skeleton quality analysis")
+    print("\nSkeleton quality analysis")
     missing_count = sum(1 for p in parsed.values() if p["has_missing"])
     none_count    = sum(1 for p in parsed.values() if p is None)
 
@@ -590,14 +559,14 @@ def section_4_quality(parsed, sampled_files):
 
 
 def section_5_joint_stats(parsed):
-    print("\n[5/7] Joint position statistics")
+    print("\nJoint position statistics")
 
     # Collect mean position of each joint across all sampled files
     # Use first frame only for speed
     joint_means = []
     for p in parsed.values():
         if p is not None and p["joints"].shape[0] > 0:
-            joint_means.append(p["joints"][0])  # first frame, shape (25,3)
+            joint_means.append(p["joints"][0])
 
     joint_means = np.stack(joint_means)  # (N, 25, 3)
     mean_pos = joint_means.mean(axis=0)  # (25, 3)
@@ -634,7 +603,7 @@ def section_5_joint_stats(parsed):
 
 
 def section_6_motion_intensity(parsed, sampled_files):
-    print("\n[6/7] Motion intensity per class")
+    print("\nMotion intensity per class")
 
     class_motion = defaultdict(list)
     for fname, p in parsed.items():
@@ -644,8 +613,8 @@ def section_6_motion_intensity(parsed, sampled_files):
         if meta is None:
             continue
         # Mean frame-to-frame displacement across all joints
-        diffs = np.diff(p["joints"], axis=0)          # (F-1, 25, 3)
-        motion = np.linalg.norm(diffs, axis=-1).mean() # scalar
+        diffs = np.diff(p["joints"], axis=0)
+        motion = np.linalg.norm(diffs, axis=-1).mean()
         class_motion[meta["action"]].append(motion)
 
     class_ids   = sorted(class_motion.keys())
@@ -672,7 +641,7 @@ def section_6_motion_intensity(parsed, sampled_files):
 
 
 def section_7_sequence_length_by_class(parsed, sampled_files):
-    print("\n[7/7] Sequence length by class")
+    print("\nSequence length by class")
 
     class_lengths = defaultdict(list)
     for fname, p in parsed.items():
@@ -703,32 +672,27 @@ def section_7_sequence_length_by_class(parsed, sampled_files):
     save(fig, "7_sequence_length_by_class.png")
 
 
-# ─── MAIN ────────────────────────────────────────────────────────────────────
-
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     sns.set_theme(style="whitegrid", palette="muted")
     random.seed(RANDOM_SEED)
 
-    # ── Step 1: scan all files and build metadata DataFrame ──
-    print(f"\n[INIT] Scanning {SKELETON_DIR} ...")
+    # scan all files and build metadata DataFrame
     if not os.path.isdir(SKELETON_DIR):
-        print(f"[ERROR] Directory not found: {SKELETON_DIR}")
-        print("        Please update SKELETON_DIR at the top of the script.")
+        print(f"Directory not found: {SKELETON_DIR}")
         return
 
     all_files_raw = [f for f in os.listdir(SKELETON_DIR) if f.lower().endswith(".skeleton")]
-    print(f"       Found {len(all_files_raw)} .skeleton files total")
+    print(f"Found {len(all_files_raw)} .skeleton files total")
 
-    # ── Filter out the 302 officially corrupted files ──
+    # Filter out the 302 officially corrupted files
     all_files  = [f for f in all_files_raw if not is_missing(f)]
     n_excluded = len(all_files_raw) - len(all_files)
-    print(f"       Excluded {n_excluded} officially corrupted files")
-    print(f"       Remaining: {len(all_files)} clean files")
+    print(f"Excluded {n_excluded} officially corrupted files")
+    print(f"Remaining: {len(all_files)} clean files")
 
     if n_excluded == 0:
-        print("       [WARN] No missing files were matched. "
-              "Check that filenames follow the SxxxCxxxPxxxRxxxAxxx pattern.")
+        print("No missing files were matched.")
 
     records = []
     for fname in all_files:
@@ -738,20 +702,18 @@ def main():
             records.append(meta)
 
     meta_df = pd.DataFrame(records)
-    print(f"       Parsed metadata for {len(meta_df)} clean files")
+    print(f"Parsed metadata for {len(meta_df)} clean files")
 
-    # ── Step 2: sample files for deep analysis ──
+    # sample files for deep analysis
     sample_n    = min(SAMPLE_SIZE, len(all_files))
     sampled     = random.sample(all_files, sample_n)
-    print(f"\n[INFO] Deep-parsing {sample_n} files for content analysis ...")
-    print(f"       (increase SAMPLE_SIZE for more accurate stats)\n")
 
     parsed = {}
     for fname in tqdm(sampled, desc="Parsing skeletons"):
         fpath = os.path.join(SKELETON_DIR, fname)
         parsed[fname] = parse_skeleton_file(fpath)
 
-    # ── Run all sections ──
+    # run all sections
     section_1_overview(meta_df)
     section_2_metadata(meta_df)
     section_3_sequence_length(parsed)
@@ -759,10 +721,6 @@ def main():
     section_5_joint_stats(parsed)
     section_6_motion_intensity(parsed, sampled)
     section_7_sequence_length_by_class(parsed, sampled)
-
-    print(f"\n{'='*55}")
-    print(f"  EDA complete. All plots saved to: {OUTPUT_DIR}/")
-    print(f"{'='*55}\n")
 
 
 if __name__ == "__main__":

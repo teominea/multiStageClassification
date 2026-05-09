@@ -3,7 +3,6 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 
-# ─── CONFIG ──────────────────────────────────────────────────────────────────
 
 SKELETON_DIR = "./dataset/nturgb+d_skeletons"
 OUTPUT_FILE  = "./preprocessed/step1_parsed.pkl"

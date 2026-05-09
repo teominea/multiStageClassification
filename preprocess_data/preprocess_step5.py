@@ -27,7 +27,7 @@ def main():
     # Build arrays for PyTorch
 
     # joints shape per sample: (100, 25, 3)
-    # We reorder axes to (3, 100, 25) → (C, T, V) for PyTorch
+    # We reorder axes to (3, 100, 25) - (C, T, V) for PyTorch
     # C = 3 coordinates (x, y, z)
     # T = 100 time steps (frames)
     # V = 25 vertices (joints)
@@ -40,7 +40,7 @@ def main():
         label_arr = np.zeros((N,),            dtype=np.int64)
 
         for i, sample in enumerate(samples):
-            # joints: (100, 25, 3) -> transpose to (3, 100, 25)
+            # joints: (100, 25, 3) - transpose to (3, 100, 25)
             joints = sample["joints"]                    # (100, 25, 3)
             joints = joints.transpose(2, 0, 1)           # (3, 100, 25)
             data_arr[i]  = joints
@@ -60,8 +60,8 @@ def main():
 
     # Verify labels are in range 0-59
     print(f"\nLabel verification:")
-    print(f"  Train — min label: {train_labels.min()}  max label: {train_labels.max()}")
-    print(f"  Test  — min label: {test_labels.min()}   max label: {test_labels.max()}")
+    print(f"  Train - min label: {train_labels.min()}  max label: {train_labels.max()}")
+    print(f"  Test  - min label: {test_labels.min()}   max label: {test_labels.max()}")
     print(f"  Unique train labels: {len(np.unique(train_labels))}  ← should be 60")
     print(f"  Unique test labels : {len(np.unique(test_labels))}   ← should be 60")
 
@@ -72,9 +72,9 @@ def main():
     test_vals    = list(test_counts.values())
 
     print(f"\nClass balance:")
-    print(f"  Train — min: {min(train_vals)}  max: {max(train_vals)}  "
+    print(f"  Train - min: {min(train_vals)}  max: {max(train_vals)}  "
           f"mean: {np.mean(train_vals):.1f}")
-    print(f"  Test  — min: {min(test_vals)}   max: {max(test_vals)}   "
+    print(f"  Test  - min: {min(test_vals)}   max: {max(test_vals)}   "
           f"mean: {np.mean(test_vals):.1f}")
     
     # Save

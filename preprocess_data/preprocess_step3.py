@@ -90,12 +90,12 @@ def main():
     sample_orig = data[0]
     sample_norm = results[0]
 
-    print(f"\nVerification — {sample_orig['filename']}:")
+    print(f"\nVerification - {sample_orig['filename']}:")
     print(f"\n  Frame 0, Joint 0 (base of spine):")
     print(f"    Before : {sample_orig['joints'][0, SPINE_BASE, :]}")
     print(f"    After  : {sample_norm['joints'][0, SPINE_BASE, :]}")
 
-    print(f"\n  Frame 0, Joint 2 (neck) — torso length check:")
+    print(f"\n  Frame 0, Joint 2 (neck) - torso length check:")
     neck_after = sample_norm['joints'][0, NECK, :]
     torso_after = np.linalg.norm(neck_after)
     print(f"    Neck position after : {neck_after}")

@@ -8,7 +8,7 @@ from tqdm import tqdm
 SKELETON_DIR = "./dataset/nturgb+d_skeletons"
 OUTPUT_FILE  = "./preprocessed/step1_parsed.pkl"
 
-# The 302 officially corrupted files — excluded before parsing
+# The 302 officially corrupted files - excluded before parsing
 MISSING_FILES = set("""
 S001C002P005R002A008
 S001C002P006R001A008
@@ -335,8 +335,7 @@ def parse_filename(fname):
 
 
 def parse_skeleton_file(filepath):
-    # Parse a single .skeleton file and extract joint data.
-
+    # Parse skeleton files and apply greedy matching to fix body ordering for two-person frames
     with open(filepath, "r") as f:
         lines = f.read().splitlines()
 
@@ -346,42 +345,62 @@ def parse_skeleton_file(filepath):
     all_joints = []
     missing_frames = []
 
+    # Store previous frame's bodies for greedy matching
+    prev_bodies = None
+
     for frame_idx in range(n_frames):
-        n_bodies = int(lines[idx])
-        idx += 1
+        n_bodies = int(lines[idx]); idx += 1
 
         if n_bodies == 0:
-            # No body detected in this frame - store zeros, flag it
             missing_frames.append(frame_idx)
             all_joints.append(np.zeros((25, 3), dtype=np.float32))
+            prev_bodies = None
             continue
 
-        # Read the first body only
-        idx += 1  # skip body info line
-        n_joints = int(lines[idx]); idx += 1
-
-        frame_joints = np.zeros((25, 3), dtype=np.float32)
-        for j in range(min(n_joints, 25)):
-            vals = lines[idx].split(); idx += 1
-            # Each joint line: x y z depthX depthY colorX colorY ...
-            # We only want the first 3 values: x, y, z
-            frame_joints[j, 0] = float(vals[0])  # x
-            frame_joints[j, 1] = float(vals[1])  # y
-            frame_joints[j, 2] = float(vals[2])  # z
-
-        # Skip any extra joints beyond 25
-        if n_joints > 25:
-            idx += (n_joints - 25)
-
-        # Skip remaining bodies (two-person interactions)
-        for _ in range(n_bodies - 1):
+        # Read all bodies in this frame (up to 2)
+        bodies = []
+        for b in range(n_bodies):
             idx += 1  # skip body info line
-            nj = int(lines[idx]); idx += 1
-            idx += nj  # skip all joints of this extra body
+            n_joints = int(lines[idx]); idx += 1
 
-        all_joints.append(frame_joints)
+            body_joints = np.zeros((25, 3), dtype=np.float32)
+            for j in range(min(n_joints, 25)):
+                vals = lines[idx].split(); idx += 1
+                body_joints[j] = [float(vals[0]),
+                                  float(vals[1]),
+                                  float(vals[2])]
+            if n_joints > 25:
+                idx += (n_joints - 25)
 
-    joints = np.stack(all_joints, axis=0)  # shape: (F, 25, 3)
+            bodies.append(body_joints)
+
+        # Greedy matching to fix body ordering
+        if len(bodies) == 2 and prev_bodies is not None \
+                and len(prev_bodies) == 2:
+            # Compute cost of both possible assignments
+            # body[0]-prev[0], body[1]-prev[1]
+            # body[0]-prev[1], body[1]-prev[0]
+            cost1 = (np.linalg.norm(bodies[0] - prev_bodies[0]) +
+                     np.linalg.norm(bodies[1] - prev_bodies[1]))
+            cost2 = (np.linalg.norm(bodies[0] - prev_bodies[1]) +
+                     np.linalg.norm(bodies[1] - prev_bodies[0]))
+
+            # If swapping gives lower cost, swap the bodies
+            if cost2 < cost1:
+                bodies = [bodies[1], bodies[0]]
+
+        # Compute mean skeleton
+        if len(bodies) == 1:
+            # Single person - use directly
+            mean_joints = bodies[0]
+        else:
+            # Two people - average their joint positions
+            mean_joints = (bodies[0] + bodies[1]) / 2.0
+
+        all_joints.append(mean_joints.astype(np.float32))
+        prev_bodies = bodies
+
+    joints = np.stack(all_joints, axis=0)  # (F, 25, 3)
     return joints, missing_frames
 
 
@@ -396,7 +415,7 @@ def main():
     ])
     print(f"Found {len(all_files)} valid skeleton files")
 
-    results      = []
+    results = []
     parse_errors = 0
 
     for fname in tqdm(all_files, desc="Parsing"):
@@ -420,13 +439,13 @@ def main():
             print(f"Failed to parse {fname}: {e}")
             parse_errors += 1
 
-    # ── Summary ──
+    # Summary
     print(f"\nResults:")
     print(f"  Successfully parsed : {len(results)}")
     print(f"  Parse errors        : {parse_errors}")
     print(f"  Files with missing  : {sum(1 for r in results if r['missing_frames'])}")
 
-    # ── Save ──
+    # Save
     with open(OUTPUT_FILE, "wb") as f:
         pickle.dump(results, f, protocol=4)
 

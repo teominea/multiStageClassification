@@ -174,20 +174,6 @@ Output   : 256 to 60
 | Loss | CrossEntropyLoss (label smoothing=0.1) |
 | Epochs | 60 |
 
-### Stage 2 - LSTM (Alternative)
-
-I also evaluated a LTSM Stage 2 as an alternative to the MLP. Unlike the MLP which computes statistical summaries over all frames, the LSTM processes the skeleton sequence frame by frame, capturing long-range temporal dependencies across the full 100-frame sequence. The LSTM hidden state is concatenated with the ST-GCN logits and passed to a final linear classifier.
-
-```
-Skeleton   : (batch, 3, 100, 25)
-Reshape    : (batch, 100, 75)
-LSTM       : 2 layers, 256 hidden units
-Hidden     : (batch, 256)
-Concat     : (batch, 316)  -- LSTM features + ST-GCN logits
-Output     : (batch, 60)
-```
-
----
 
 ## Results
 
@@ -195,7 +181,6 @@ All experiments were conducted on the NTU RGB+D 60 dataset with a fixed random s
 
 | Model | Test Accuracy |
 |---|---|
-| LSTM Standalone | 63.10% |
 | ST-GCN Standalone | 73.20% |
 | ST-GCN + MLP Pipeline | 77.92% |
 | ST-GCN + LSTM Pipeline | 76.96% |

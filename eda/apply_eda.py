@@ -459,7 +459,7 @@ def section_1_overview(meta_df):
     ax.set_xticklabels(labels, rotation=90, fontsize=7)
     ax.set_xlabel("Action Class")
     ax.set_ylabel("Number of Samples")
-    ax.set_title("Class Distribution — NTU RGB+D 60 (302 corrupted files excluded)")
+    ax.set_title("Class Distribution - NTU RGB+D 60 (302 corrupted files excluded)")
     ax.axhline(counts.mean(), color="red", linestyle="--", linewidth=1.2, label=f"Mean = {counts.mean():.0f}")
     ax.legend()
     fig.tight_layout()
@@ -467,7 +467,7 @@ def section_1_overview(meta_df):
 
 
 def section_2_metadata(meta_df):
-    print("\nSubject & camera distribution")
+    print("\nSubject and camera distribution")
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 

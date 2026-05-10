@@ -24,11 +24,6 @@ def main():
         else:
             kept.append(sample)
 
-    # ── Summary ──
-    print(f"\nResults:")
-    print(f"  Kept    : {len(kept)}")
-    print(f"  Removed : {len(removed)}")
-
     # Show which classes were affected
     removed_classes = Counter(s["action"] for s in removed)
     print(f"\nRemoved samples by class:")
@@ -41,8 +36,8 @@ def main():
     print(f"\nRemaining class distribution:")
     print(f"  Min samples per class : {min(counts)}")
     print(f"  Max samples per class : {max(counts)}")
-    print(f"  Mean                  : {np.mean(counts):.1f}")
-    print(f"  Classes affected      : {len(removed_classes)}")
+    print(f"  Mean : {np.mean(counts):.1f}")
+    print(f"  Classes affected : {len(removed_classes)}")
 
     # Save
     with open(OUTPUT_FILE, "wb") as f:

@@ -25,7 +25,7 @@ def pad_or_truncate(joints, target_len):
         return resized, "padded"
 
     else:
-        # Truncate - keep the first target_len frames
+        # Keep the first target_len frames
         resized = joints[:target_len].copy()
         return resized, "truncated"
 
@@ -54,16 +54,10 @@ def main():
             "filename": sample["filename"],
             "action":   sample["action"],
             "subject":  sample["subject"],
-            "joints":   resized,    # now always (100, 25, 3)
+            "joints":   resized,
         })
 
     # Summary
-    orig = np.array(original_lengths)
-    print(f"\nOriginal sequence length stats:")
-    print(f"  Min    : {orig.min()} frames")
-    print(f"  Max    : {orig.max()} frames")
-    print(f"  Mean   : {orig.mean():.1f} frames")
-    print(f"  Median : {np.median(orig):.0f} frames")
 
     print(f"\nResize operations:")
     print(f"  Exact      (= 100 frames) : {status_counts['exact']}")

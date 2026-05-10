@@ -339,7 +339,8 @@ def parse_skeleton_file(filepath):
         lines = f.read().splitlines()
 
     idx = 0
-    n_frames = int(lines[idx]); idx += 1
+    n_frames = int(lines[idx])
+    idx += 1
 
     all_joints = []
     missing_frames = []
@@ -348,7 +349,8 @@ def parse_skeleton_file(filepath):
     prev_bodies = None
 
     for frame_idx in range(n_frames):
-        n_bodies = int(lines[idx]); idx += 1
+        n_bodies = int(lines[idx])
+        idx += 1
 
         if n_bodies == 0:
             missing_frames.append(frame_idx)
@@ -356,10 +358,11 @@ def parse_skeleton_file(filepath):
             prev_bodies = None
             continue
 
-        # Read all bodies in this frame (up to 2)
+        # Read all bodies in this frame
         bodies = []
         for b in range(n_bodies):
-            idx += 1  # skip body info line
+            # skip body info line
+            idx += 1  
             n_joints = int(lines[idx]); idx += 1
 
             body_joints = np.zeros((25, 3), dtype=np.float32)

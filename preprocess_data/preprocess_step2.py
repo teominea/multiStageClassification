@@ -11,8 +11,9 @@ OUTPUT_FILE = "./preprocessed/step2_filled.pkl"
 # This function will be used to fill missing frames by copying the last valid frame forward
 def forward_fill(joints, missing_frames):
 
+    # Base case
     if not missing_frames:
-        return joints, False  # nothing to do
+        return joints, False
 
     filled = joints.copy()
     F = filled.shape[0]
@@ -20,8 +21,7 @@ def forward_fill(joints, missing_frames):
     # Build a boolean mask: True = this frame is missing
     missing_set = set(missing_frames)
 
-    # Handle leading missing frames (fill forward from first valid frame)
-    # Find the first valid frame
+    # Fill forward from first valid frame
     first_valid = None
     for i in range(F):
         if i not in missing_set:
@@ -29,7 +29,7 @@ def forward_fill(joints, missing_frames):
             break
 
     if first_valid is None:
-        # Every single frame is missing this file is unusable
+        # No valid frames at all
         return None, False
 
     if first_valid > 0:
@@ -38,10 +38,9 @@ def forward_fill(joints, missing_frames):
             filled[i] = filled[first_valid]
 
     # Forward-fill remaining missing frames 
-    # At this point frame 0 is guaranteed valid, so we can always look back
     for i in range(1, F):
         if i in missing_set:
-            filled[i] = filled[i - 1]  # copy previous frame
+            filled[i] = filled[i - 1]
 
     return filled, True
 
@@ -55,8 +54,8 @@ def main():
     skipped = 0
 
     for sample in tqdm(data, desc="Forward-filling"):
-        joints = sample["joints"]          # (F, 25, 3)
-        missing_frames = sample["missing_frames"]  # list of ints
+        joints = sample["joints"]
+        missing_frames = sample["missing_frames"]
 
         filled, was_fixed = forward_fill(joints, missing_frames)
 
@@ -74,7 +73,7 @@ def main():
             "filename": sample["filename"],
             "action":   sample["action"],
             "subject":  sample["subject"],
-            "joints":   filled,             # (F, 25, 3), no zero frames
+            "joints":   filled,
         })
 
     # Summary

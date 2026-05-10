@@ -172,7 +172,7 @@ Output   : 256 to 60
 | Epochs | 60 |
 
 
-## Results
+## Results 
 
 All experiments were conducted on the NTU RGB+D 60 dataset with a fixed random seed of 42 to ensure reproducibility.
 

@@ -88,7 +88,7 @@ Output:
 
 ### Stage 1 - Spatial-Temporal Graph Convolutional Network (ST-GCN)
 
-The first stage is based on the ST-GCN architecture proposed by Yan et al. (2018). The skeleton is modeled as a graph where the 25 joints are nodes and the physical bones connecting them are edges. This structural representation allows the model to learn spatial dependencies between connected body joints explicitly, rather than treating joint coordinates as a flat vector.
+The first stage is based on the ST-GCN architecture proposed by Yan et al. The skeleton is modeled as a graph where the 25 joints are nodes and the physical bones connecting them are edges. This structural representation allows the model to learn spatial dependencies between connected body joints explicitly, rather than treating joint coordinates as a flat vector.
 
 The model consists of 9 ST-GCN blocks stacked sequentially, each combining two operations:
 
@@ -123,20 +123,17 @@ After the final block, global average pooling collapses the time and joint dimen
 
 **Data augmentation applied during training:**
 - Random rotation around the vertical axis (+/- 15 degrees)
-- Random scaling (+/- 10%)
-- Random horizontal flip (50% probability)
-- Random temporal cropping (85-100% of frames)
-- Random joint dropout (10% of joints, 30% probability)
+- Random translation (+/-0.1 in each axis)
 
 ### Stage 2 - Multi-Layer Perceptron (MLP)
 
 The second stage receives two inputs simultaneously and learns to combine them into a refined final prediction:
 
-**Input 1 - ST-GCN logits (60 values)**
+**Input 1 - ST-GCN logits**
 
 The raw class scores produced by the frozen Stage 1 model, representing its confidence for each of the 60 action classes.
 
-**Input 2 - Skeleton statistical features (570 values)**
+**Input 2 - Skeleton statistical features**
 
 Statistical summaries computed directly from the raw skeleton sequence, capturing global properties that the ST-GCN local 9-frame temporal window does not model:
 
@@ -181,6 +178,6 @@ All experiments were conducted on the NTU RGB+D 60 dataset with a fixed random s
 
 | Model | Test Accuracy |
 |---|---|
-| ST-GCN Standalone | 73.20% |
-| ST-GCN + MLP Pipeline | 77.92% |
+| ST-GCN Standalone | 71.49% |
+| ST-GCN + MLP Pipeline | 78.23% |
 | ST-GCN + LSTM Pipeline | 76.96% |
